@@ -16,7 +16,7 @@ app.get("/", (req, res) => {
   res.send("Munaf AI Email Backend Running 🚀");
 });
 
-// Manual test route (sends test email)
+// Manual test route (admin email only)
 app.get("/test-email", async (req, res) => {
   try {
     await sendEmail({
@@ -26,6 +26,8 @@ app.get("/test-email", async (req, res) => {
         <h2>Success!</h2>
         <p>Your SendGrid email system is working perfectly.</p>
       `,
+      userEmail: "malikmunaf65@gmail.com",
+      userName: "Munaf",
     });
 
     res.send("Test email sent successfully ✅");
@@ -35,24 +37,27 @@ app.get("/test-email", async (req, res) => {
   }
 });
 
-// ✅ MAIN API ROUTE (THIS FIXES YOUR ISSUE)
+// ✅ MAIN ROUTE (this connects your website form)
 app.post("/send-email", async (req, res) => {
   try {
-    const { name, email, message } = req.body;
+    const { name, email, phone, message } = req.body;
 
     if (!name || !email || !message) {
-      return res.status(400).json({ error: "Missing required fields" });
+      return res.status(400).json({ success: false, error: "Missing fields" });
     }
 
     await sendEmail({
       to: "malikmunaf65@gmail.com",
-      subject: `New message from ${name}`,
+      subject: `📩 New Lead from ${name}`,
       html: `
-        <h3>New Contact Message</h3>
-        <p><strong>Name:</strong> ${name}</p>
-        <p><strong>Email:</strong> ${email}</p>
-        <p><strong>Message:</strong> ${message}</p>
+        <h2>New Contact Form Submission</h2>
+        <p><b>Name:</b> ${name}</p>
+        <p><b>Email:</b> ${email}</p>
+        <p><b>Phone:</b> ${phone || "Not provided"}</p>
+        <p><b>Message:</b><br/>${message}</p>
       `,
+      userEmail: email,   // 👈 THIS enables auto-reply
+      userName: name      // 👈 This personalizes auto-reply
     });
 
     res.json({ success: true });
@@ -62,9 +67,8 @@ app.post("/send-email", async (req, res) => {
   }
 });
 
-// Render port
+// Start server
 const PORT = process.env.PORT || 5000;
-
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
