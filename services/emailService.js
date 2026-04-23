@@ -1,28 +1,34 @@
 import dotenv from "dotenv";
 dotenv.config();
 
-import sgMail from "@sendgrid/mail";
+import nodemailer from "nodemailer";
 
-const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY;
-const FROM_EMAIL = process.env.FROM_EMAIL;
+// ✅ ENV VARIABLES
+const EMAIL_USER = process.env.EMAIL_USER;
+const EMAIL_PASS = process.env.EMAIL_PASS;
 
-console.log("API KEY EXISTS:", !!SENDGRID_API_KEY);
-console.log("FROM EMAIL:", FROM_EMAIL);
+console.log("EMAIL USER:", EMAIL_USER);
+console.log("EMAIL PASS EXISTS:", !!EMAIL_PASS);
 
-if (!SENDGRID_API_KEY) {
-  throw new Error("SENDGRID_API_KEY is missing from environment variables");
+// ✅ VALIDATION
+if (!EMAIL_USER) {
+  throw new Error("EMAIL_USER is missing from environment variables");
 }
 
-if (!SENDGRID_API_KEY.startsWith("SG.")) {
-  throw new Error("Invalid SendGrid API key (must start with SG.)");
+if (!EMAIL_PASS) {
+  throw new Error("EMAIL_PASS is missing from environment variables");
 }
 
-if (!FROM_EMAIL) {
-  throw new Error("FROM_EMAIL is missing from environment variables");
-}
+// ✅ TRANSPORTER (GMAIL)
+const transporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    user: EMAIL_USER,
+    pass: EMAIL_PASS,
+  },
+});
 
-sgMail.setApiKey(SENDGRID_API_KEY);
-
+// ✅ MAIN FUNCTION
 export async function sendEmail({
   to,
   subject,
@@ -31,17 +37,19 @@ export async function sendEmail({
   userName,
 }) {
   try {
-    await sgMail.send({
+    // 1️⃣ Send email to YOU
+    await transporter.sendMail({
+      from: EMAIL_USER,
       to,
-      from: FROM_EMAIL,
       subject,
       html,
     });
 
+    // 2️⃣ Auto-reply to user
     if (userEmail) {
-      await sgMail.send({
+      await transporter.sendMail({
+        from: EMAIL_USER,
         to: userEmail,
-        from: FROM_EMAIL,
         subject: "Thanks for contacting Munaf Malik 👋",
         html: `
         <div style="background:#f6f9fc;padding:30px;font-family:Arial,sans-serif">
@@ -97,7 +105,7 @@ export async function sendEmail({
     return { success: true };
 
   } catch (error) {
-    console.error("SENDGRID ERROR:", error.response?.body || error.message);
+    console.error("EMAIL ERROR:", error.message);
     throw new Error("Failed to send email");
   }
 }
